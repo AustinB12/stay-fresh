@@ -2,53 +2,24 @@ import { useState, useEffect, useCallback, memo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Item } from '@/types/database';
 import { useAuth } from './AuthProvider';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import {
   Plus,
-  Minus,
-  SquarePen,
-  Trash2,
-  Calendar,
   ShoppingBasket,
   Search,
   Refrigerator,
   Container,
   Snowflake,
   AlertCircle,
-  Camera,
-  ImagePlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { ItemCard } from './Items/ItemCard';
 import { AddItemDialog } from './Items/AddItemDialog';
 import { EditItemDialog } from './Items/EditItemDialog';
-import { log } from 'console';
 
 const InventoryGrid = memo(
   ({
@@ -187,7 +158,7 @@ export default function Inventory() {
           expiry_date: expiry_date || null,
           image_url,
         })
-        .match({ id, user_id: user?.id });
+        .match({ id });
       if (error) throw error;
       toast.success(`${name} updated!`);
       if (pendingImagePreview) URL.revokeObjectURL(pendingImagePreview);

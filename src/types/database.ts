@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 export type Json =
   | string
   | number
@@ -52,29 +47,8 @@ export interface Database {
           updated_at?: string;
         };
       };
-      profiles: {
-        Row: {
-          id: string;
-          full_name: string | null;
-          avatar_url: string | null;
-          updated_at: string;
-        };
-        Insert: {
-          id: string;
-          full_name?: string | null;
-          avatar_url?: string | null;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          full_name?: string | null;
-          avatar_url?: string | null;
-          updated_at?: string;
-        };
-      };
     };
   };
 }
 
 export type Item = Database['public']['Tables']['items']['Row'];
-export type Profile = Database['public']['Tables']['profiles']['Row'];

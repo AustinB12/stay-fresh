@@ -1,10 +1,4 @@
 import { useState } from 'react';
-
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { useAuth } from '@/components/AuthProvider';
 import Inventory from '@/components/Inventory';
 import Login from '@/components/Login';
@@ -27,9 +21,30 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className='min-h-screen flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 space-y-4'>
-        <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-green-600' />
-        <p className='text-zinc-500 font-medium animate-pulse'>
+      <div className='min-h-screen flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 space-y-4 gap-4'>
+        <div className='loader'>
+          <div
+            className='orbe'
+            style={{ '--index': 0 } as React.CSSProperties}
+          ></div>
+          <div
+            className='orbe'
+            style={{ '--index': 1 } as React.CSSProperties}
+          ></div>
+          <div
+            className='orbe'
+            style={{ '--index': 2 } as React.CSSProperties}
+          ></div>
+          <div
+            className='orbe'
+            style={{ '--index': 3 } as React.CSSProperties}
+          ></div>
+          <div
+            className='orbe'
+            style={{ '--index': 4 } as React.CSSProperties}
+          ></div>
+        </div>
+        <p className='text-zinc-500 text-xl animate-pulse'>
           Checking your kitchen...
         </p>
       </div>

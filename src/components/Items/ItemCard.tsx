@@ -86,7 +86,7 @@ export const ItemCard = memo(
             {status && (
               <Badge
                 variant='secondary'
-                className={`${status.color} fixed top-2 left-4 text-white border-none py-0 px-2 h-5 text-[10px] uppercase font-bold`}
+                className={`${status.color} absolute top-7 left-4 text-white border-none py-0 px-2 h-5 text-[10px] uppercase font-bold`}
               >
                 {status.label}
               </Badge>
