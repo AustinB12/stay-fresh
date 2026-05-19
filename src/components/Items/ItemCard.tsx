@@ -57,7 +57,7 @@ export const ItemCard = memo(
           onDoubleClick={() => onEdit(item)}
           className='overflow-hidden border-zinc-200 dark:border-zinc-700 transition-all hover:shadow-md h-full flex flex-col gap-0 py-1'
         >
-          <CardHeader className='pb-2 space-y-1'>
+          <CardHeader className='pb-2 space-y-1 relative'>
             <div className='flex justify-between items-start'>
               <CardTitle className='text-lg font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-green-600 transition-colors truncate'>
                 {item.name}
@@ -86,7 +86,7 @@ export const ItemCard = memo(
             {status && (
               <Badge
                 variant='secondary'
-                className={`${status.color} text-white border-none py-0 px-2 h-5 text-[10px] uppercase font-bold`}
+                className={`${status.color} fixed top-2 left-4 text-white border-none py-0 px-2 h-5 text-[10px] uppercase font-bold`}
               >
                 {status.label}
               </Badge>
