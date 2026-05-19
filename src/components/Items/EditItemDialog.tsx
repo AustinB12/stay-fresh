@@ -49,12 +49,7 @@ export function EditItemDialog({
           <div className='grid gap-4 py-4'>
             <div className='grid gap-2'>
               <Label>Item Photo</Label>
-              <div
-                className='relative w-full h-36 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center cursor-pointer group'
-                onClick={() =>
-                  document.getElementById('edit-image-upload')?.click()
-                }
-              >
+              <div className='relative w-full h-64 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group'>
                 {pendingImagePreview || editingItem.image_url ? (
                   <img
                     src={(pendingImagePreview || editingItem.image_url)!}
@@ -62,22 +57,74 @@ export function EditItemDialog({
                     className='w-full h-full object-cover'
                   />
                 ) : (
-                  <div className='flex flex-col items-center gap-2 text-zinc-400 dark:text-zinc-500'>
-                    <ImagePlus className='h-8 w-8' />
-                    <span className='text-xs'>Click to add a photo</span>
+                  <div className='flex gap-8 items-center justify-center'>
+                    <button
+                      type='button'
+                      className='flex flex-col items-center gap-2 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer'
+                      onClick={() =>
+                        document.getElementById('edit-image-upload')?.click()
+                      }
+                    >
+                      <ImagePlus className='h-8 w-8' />
+                      <span className='text-xs'>Upload photo</span>
+                    </button>
+                    <button
+                      type='button'
+                      className='flex flex-col items-center gap-2 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer'
+                      onClick={() =>
+                        document.getElementById('edit-camera-capture')?.click()
+                      }
+                    >
+                      <Camera className='h-8 w-8' />
+                      <span className='text-xs'>Take photo</span>
+                    </button>
                   </div>
                 )}
-                <div className='absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center'>
-                  <div className='flex flex-col items-center gap-1 text-white'>
-                    <Camera className='h-6 w-6' />
-                    <span className='text-xs font-medium'>Change photo</span>
+                {(pendingImagePreview || editingItem.image_url) && (
+                  <div className='absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-6'>
+                    <button
+                      type='button'
+                      className='flex flex-col items-center gap-1 text-white hover:text-zinc-200 transition-colors cursor-pointer'
+                      onClick={() =>
+                        document.getElementById('edit-image-upload')?.click()
+                      }
+                    >
+                      <ImagePlus className='h-6 w-6' />
+                      <span className='text-xs font-medium'>Upload</span>
+                    </button>
+                    <button
+                      type='button'
+                      className='flex flex-col items-center gap-1 text-white hover:text-zinc-200 transition-colors cursor-pointer'
+                      onClick={() =>
+                        document.getElementById('edit-camera-capture')?.click()
+                      }
+                    >
+                      <Camera className='h-6 w-6' />
+                      <span className='text-xs font-medium'>Camera</span>
+                    </button>
                   </div>
-                </div>
+                )}
               </div>
               <input
                 id='edit-image-upload'
                 type='file'
                 accept='image/*'
+                className='hidden'
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (pendingImagePreview)
+                      URL.revokeObjectURL(pendingImagePreview);
+                    setPendingImageFile(file);
+                    setPendingImagePreview(URL.createObjectURL(file));
+                  }
+                }}
+              />
+              <input
+                id='edit-camera-capture'
+                type='file'
+                accept='image/*'
+                capture='environment'
                 className='hidden'
                 onChange={(e) => {
                   const file = e.target.files?.[0];
@@ -152,6 +199,7 @@ export function EditItemDialog({
               <Input
                 id='edit-expiry'
                 type='date'
+                className='dark:scheme-dark'
                 value={editingItem.expiry_date ?? ''}
                 onChange={(e) =>
                   setEditingItem({
