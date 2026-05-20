@@ -58,14 +58,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithGoogle = async () => {
-    console.log(
-      `%c ${window.location.origin}`,
-      'color: green; font-weight: bold;',
-    );
+    const redirectTo = import.meta.env.VITE_SITE_URL || window.location.origin;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo,
       },
     });
     if (error) console.error('Error signing in:', error.message);
@@ -96,7 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo:
+            import.meta.env.VITE_SITE_URL || window.location.origin,
         },
       });
       if (error) return { error: error.message };

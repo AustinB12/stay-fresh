@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,8 +19,10 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Camera, ImagePlus, Plus } from 'lucide-react';
+import { Camera, ImagePlus, Plus, ScanBarcode } from 'lucide-react';
 import { toast } from 'sonner';
+import { BarcodeScanner } from './BarcodeScanner';
+import { lookupBarcode } from '@/lib/openFoodFacts';
 
 interface AddItemDialogProps {
   isOpen: boolean;
@@ -37,6 +39,7 @@ export function AddItemDialog({
 }: AddItemDialogProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [newItem, setNewItem] = useState({
     name: '',
     category: 'fridge' as 'fridge' | 'pantry' | 'freezer',
@@ -63,13 +66,38 @@ export function AddItemDialog({
     if (!open) resetForm();
   };
 
+  const handleBarcodeDetected = useCallback(async (barcode: string) => {
+    setIsScannerOpen(false);
+    const product = await lookupBarcode(barcode);
+    if (product) {
+      setNewItem((prev) => ({
+        ...prev,
+        name: product.name,
+        category: product.category,
+      }));
+      if (product.imageUrl) {
+        setImageFile(null);
+        setImagePreview(product.imageUrl);
+      }
+      toast.success(`Product found: ${product.name}`);
+    } else {
+      toast.error('Product not found — try entering details manually.');
+    }
+  }, []);
+
   const addItem = async () => {
     if (!newItem.name) return;
 
     try {
+      // If we have a URL preview (from barcode scan) but no file, include it in the insert
+      const insertData: Record<string, any> = { ...newItem, user_id: userId };
+      if (!imageFile && imagePreview && imagePreview.startsWith('http')) {
+        insertData.image_url = imagePreview;
+      }
+
       const { data: inserted, error } = await (supabase as any)
         .from('items')
-        .insert([{ ...newItem, user_id: userId }])
+        .insert([insertData])
         .select('id')
         .single();
       if (error) throw error;
@@ -145,6 +173,14 @@ export function AddItemDialog({
                   >
                     <Camera className='h-8 w-8' />
                     <span className='text-xs'>Take photo</span>
+                  </button>
+                  <button
+                    type='button'
+                    className='flex flex-col items-center gap-2 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer'
+                    onClick={() => setIsScannerOpen(true)}
+                  >
+                    <ScanBarcode className='h-8 w-8' />
+                    <span className='text-xs'>Scan barcode</span>
                   </button>
                 </div>
               )}
@@ -279,6 +315,11 @@ export function AddItemDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+      <BarcodeScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onDetected={handleBarcodeDetected}
+      />
     </Dialog>
   );
 }
