@@ -63,7 +63,10 @@ export function AddItemDialog({
 
   const handleOpenChange = (open: boolean) => {
     onOpenChange(open);
-    if (!open) resetForm();
+    if (!open) {
+      setIsScannerOpen(false);
+      resetForm();
+    }
   };
 
   const handleBarcodeDetected = useCallback(async (barcode: string) => {

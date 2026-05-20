@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import type { IScannerControls } from '@zxing/browser';
 import {
@@ -21,63 +21,82 @@ export function BarcodeScanner({
   onClose,
   onDetected,
 }: BarcodeScannerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
+  const videoElRef = useRef<HTMLVideoElement | null>(null);
+  const stoppedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
 
+  const stopCamera = useCallback(() => {
+    stoppedRef.current = true;
+    controlsRef.current?.stop();
+    controlsRef.current = null;
+    // Stop all media stream tracks to release the camera
+    const video = videoElRef.current;
+    if (video?.srcObject) {
+      const stream = video.srcObject as MediaStream;
+      stream.getTracks().forEach((track) => track.stop());
+      video.srcObject = null;
+    }
+    videoElRef.current = null;
+  }, []);
+
+  // Clean up when dialog closes
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      stopCamera();
+      setError(null);
+      setScanning(false);
+    }
+  }, [isOpen, stopCamera]);
 
-    const reader = new BrowserMultiFormatReader();
-    setError(null);
-    setScanning(true);
+  // Ref callback — fires when the video element mounts in the DOM
+  const videoRefCallback = useCallback(
+    (video: HTMLVideoElement | null) => {
+      if (!video || !isOpen) return;
 
-    let stopped = false;
+      videoElRef.current = video;
+      stoppedRef.current = false;
+      setError(null);
+      setScanning(true);
 
-    reader
-      .decodeFromVideoDevice(
-        undefined,
-        videoRef.current!,
-        (result, err, controls) => {
-          if (stopped) return;
+      const reader = new BrowserMultiFormatReader();
+
+      reader
+        .decodeFromVideoDevice(undefined, video, (result, err, controls) => {
+          if (stoppedRef.current) return;
           if (result) {
-            stopped = true;
+            stoppedRef.current = true;
             controls.stop();
             onDetected(result.getText());
           }
           if (err && err.name === 'NotAllowedError') {
-            stopped = true;
+            stoppedRef.current = true;
             controls.stop();
             setError(
               'Camera permission denied. Please allow camera access and try again.',
             );
             setScanning(false);
           }
-        },
-      )
-      .then((controls) => {
-        controlsRef.current = controls;
-      })
-      .catch((e) => {
-        if (e.name === 'NotAllowedError') {
-          setError(
-            'Camera permission denied. Please allow camera access and try again.',
-          );
-        } else if (e.name === 'NotFoundError') {
-          setError('No camera found on this device.');
-        } else {
-          setError('Could not start camera: ' + e.message);
-        }
-        setScanning(false);
-      });
-
-    return () => {
-      stopped = true;
-      controlsRef.current?.stop();
-      controlsRef.current = null;
-    };
-  }, [isOpen, onDetected]);
+        })
+        .then((controls) => {
+          controlsRef.current = controls;
+        })
+        .catch((e) => {
+          if (e.name === 'NotAllowedError') {
+            setError(
+              'Camera permission denied. Please allow camera access and try again.',
+            );
+          } else if (e.name === 'NotFoundError') {
+            setError('No camera found on this device.');
+          } else {
+            setError('Could not start camera: ' + e.message);
+          }
+          setScanning(false);
+        });
+    },
+    [isOpen, onDetected],
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -96,10 +115,11 @@ export function BarcodeScanner({
             </div>
           ) : (
             <>
-              <div className='relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-black'>
+              <div className='relative w-full aspect-4/3 rounded-lg overflow-hidden bg-black'>
                 <video
-                  ref={videoRef}
+                  ref={videoRefCallback}
                   className='w-full h-full object-cover'
+                  autoPlay
                   muted
                   playsInline
                 />
@@ -112,7 +132,13 @@ export function BarcodeScanner({
               <p className='text-sm text-zinc-500 dark:text-zinc-400'>
                 Point your camera at a barcode
               </p>
-              <Button variant='outline' onClick={onClose}>
+              <Button
+                variant='outline'
+                onClick={() => {
+                  stopCamera();
+                  onClose();
+                }}
+              >
                 Cancel
               </Button>
             </>
