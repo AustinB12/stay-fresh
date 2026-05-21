@@ -20,6 +20,7 @@ import { AnimatePresence } from 'motion/react';
 import { ItemCard } from './Items/ItemCard';
 import { AddItemDialog } from './Items/AddItemDialog';
 import { EditItemDialog } from './Items/EditItemDialog';
+import { QuickAddItemDialog } from './Items/QuickAddItemDialog';
 
 const InventoryGrid = memo(
   ({
@@ -84,6 +85,7 @@ export default function Inventory() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isQuickAddDialogOpen, setIsQuickAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
@@ -264,6 +266,12 @@ export default function Inventory() {
           <AddItemDialog
             isOpen={isAddDialogOpen}
             onOpenChange={setIsAddDialogOpen}
+            userId={user?.id}
+            onSuccess={fetchItems}
+          />
+          <QuickAddItemDialog
+            isOpen={isQuickAddDialogOpen}
+            onOpenChange={setIsQuickAddDialogOpen}
             userId={user?.id}
             onSuccess={fetchItems}
           />

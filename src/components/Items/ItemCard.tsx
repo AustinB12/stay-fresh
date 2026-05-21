@@ -28,7 +28,11 @@ const iconClass = 'h-10 w-10 text-zinc-300 dark:text-zinc-600';
 
 const get_default_image = (name: string): JSX.Element => {
   const lowerName = name.toLowerCase();
-  if (['coke', 'pepsi', 'sprite', 'soda'].includes(lowerName))
+  if (
+    ['coke', 'pepsi', 'sprite', 'soda', 'mini cokes', 'mini coke'].includes(
+      lowerName,
+    )
+  )
     return <CupSoda className={iconClass} />;
   if (['beef', 'steak', 'ground beef'].includes(lowerName))
     return <Beef className={iconClass} />;
@@ -64,12 +68,12 @@ export const ItemCard = memo(
           className='hover:cursor-pointer overflow-hidden border-zinc-200 dark:border-zinc-700 transition-all hover:shadow-md h-full flex flex-col gap-0 py-4 px-4'
         >
           <CardHeader className='pb-2 space-y-1 relative'>
-            <div className='flex justify-between items-center'>
-              <CardTitle className='text-lg font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-green-600 transition-colors truncate'>
+            <div className='flex justify-between items-start'>
+              <CardTitle className='text-lg text-wrap font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-green-600 transition-colors truncate'>
                 {item.name}
               </CardTitle>
 
-              <span>
+              <span className='text-nowrap'>
                 <Button
                   aria-label='Edit Button'
                   variant='ghost'
@@ -145,7 +149,10 @@ export const ItemCard = memo(
                   {item.quantity}{' '}
                   <span className='text-zinc-500 text-xs ml-1'>
                     {item.unit}
-                    {item.quantity > 1 && item.unit !== 'pcs' ? 's' : ''}
+                    {item.quantity > 1 &&
+                    item.unit.lastIndexOf('s') !== item.unit.length - 1
+                      ? 's'
+                      : ''}
                   </span>
                 </span>
                 <Button
