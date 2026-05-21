@@ -1,16 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { CardDescription } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -19,8 +10,39 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Camera, ImagePlus, Plus, ScanBarcode } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+
+const quick_add_items: Inventory_Item[] = [
+  {
+    name: 'Marmita',
+    category: 'freezer',
+    quantity: 1,
+    unit: 'box',
+    expiry_date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(), // 3 weeks from now
+  },
+  {
+    name: 'Mini Cokes',
+    category: 'fridge',
+    quantity: 10,
+    unit: 'cans',
+    expiry_date: null,
+  },
+  {
+    name: 'Honey Bunches of Oats',
+    category: 'pantry',
+    quantity: 1,
+    unit: 'box',
+    expiry_date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(), // 3 weeks from now
+  },
+  {
+    name: 'Jimmy Dean Biscuits',
+    category: 'freezer',
+    quantity: 1,
+    unit: '',
+    expiry_date: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString(), // 4 weeks from now
+  },
+];
 
 interface QuickAddItemDialogProps {
   isOpen: boolean;
@@ -79,46 +101,16 @@ export function QuickAddItemDialog({
 
     switch (selectedTemplate) {
       case 'Marmita':
-        newItem = {
-          name: 'Marmita',
-          category: 'freezer',
-          quantity: 1,
-          unit: 'box',
-          expiry_date: new Date(
-            Date.now() + 21 * 24 * 60 * 60 * 1000,
-          ).toISOString(), // 3 weeks from now
-        };
+        newItem = { ...quick_add_items[0] };
         break;
       case 'Mini Cokes':
-        newItem = {
-          name: 'Mini Cokes',
-          category: 'fridge',
-          quantity: 10,
-          unit: 'cans',
-          expiry_date: null,
-        };
+        newItem = { ...quick_add_items[1] };
         break;
       case 'Honey Bunches of Oats':
-        newItem = {
-          name: 'Honey Bunches of Oats',
-          category: 'pantry',
-          quantity: 1,
-          unit: 'box',
-          expiry_date: new Date(
-            Date.now() + 21 * 24 * 60 * 60 * 1000,
-          ).toISOString(), // 3 weeks from now
-        };
+        newItem = { ...quick_add_items[2] };
         break;
       case 'Jimmy Dean Biscuits':
-        newItem = {
-          name: 'Jimmy Dean Biscuits',
-          category: 'freezer',
-          quantity: 1,
-          unit: '',
-          expiry_date: new Date(
-            Date.now() + 28 * 24 * 60 * 60 * 1000,
-          ).toISOString(), // 4 weeks from now
-        };
+        newItem = { ...quick_add_items[3] };
         break;
     }
 
@@ -181,44 +173,18 @@ export function QuickAddItemDialog({
           </CardDescription>
         </DialogHeader>
         <div className='grid gap-4 py-4 grid-cols-2'>
-          <Button
-            onClick={() => setSelectedTemplate('Marmita')}
-            size='lg'
-            className='hover:cursor-pointer'
-            variant={selectedTemplate === 'Marmita' ? 'default' : 'outline'}
-          >
-            Marmita
-          </Button>
-          <Button
-            onClick={() => setSelectedTemplate('Mini Cokes')}
-            size='lg'
-            className='hover:cursor-pointer'
-            variant={selectedTemplate === 'Mini Cokes' ? 'default' : 'outline'}
-          >
-            Mini Cokes
-          </Button>
-          <Button
-            onClick={() => setSelectedTemplate('Honey Bunches of Oats')}
-            size='lg'
-            className='hover:cursor-pointer'
-            variant={
-              selectedTemplate === 'Honey Bunches of Oats'
-                ? 'default'
-                : 'outline'
-            }
-          >
-            Honey Bunches of Oats
-          </Button>
-          <Button
-            onClick={() => setSelectedTemplate('Jimmy Dean Biscuits')}
-            size='lg'
-            className='hover:cursor-pointer'
-            variant={
-              selectedTemplate === 'Jimmy Dean Biscuits' ? 'default' : 'outline'
-            }
-          >
-            Jimmy Dean Biscuits
-          </Button>
+          {quick_add_items.map((item) => (
+            <Button
+              onClick={() =>
+                setSelectedTemplate(item.name as Quick_Add_Templates)
+              }
+              size='lg'
+              className='hover:cursor-pointer h-24'
+              variant={selectedTemplate === item.name ? 'default' : 'outline'}
+            >
+              {item.name}
+            </Button>
+          ))}
         </div>
         <DialogFooter className='md:justify-between'>
           <Button

@@ -254,7 +254,7 @@ export default function Inventory() {
     <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-8'>
       <header className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
         <div className='flex flex-wrap items-center gap-3'>
-          <div className='relative grow md:grow-0'>
+          <div className='relative grow w-full md:grow-0'>
             <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400' />
             <Input
               placeholder='Search items...'

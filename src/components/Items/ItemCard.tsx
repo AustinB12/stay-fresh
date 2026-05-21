@@ -145,7 +145,7 @@ export const ItemCard = memo(
                 >
                   <Minus className='h-5 w-5' />
                 </Button>
-                <span className='text-sm font-medium w-12 text-center'>
+                <span className='text-sm font-medium w-12 text-center text-nowrap'>
                   {item.quantity}{' '}
                   <span className='text-zinc-500 text-xs ml-1'>
                     {item.unit}
