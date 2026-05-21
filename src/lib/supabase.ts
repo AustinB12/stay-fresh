@@ -22,3 +22,32 @@ export const supabase = isConfigured
         );
       },
     });
+
+/** Fetch all tag → color mappings for the current user. */
+export async function fetchTagColors(
+  userId: string,
+): Promise<Record<string, string>> {
+  const { data } = await supabase
+    .from('user_tag_colors')
+    .select('tag, color')
+    .eq('user_id', userId);
+  return Object.fromEntries((data ?? []).map(({ tag, color }) => [tag, color]));
+}
+
+/** Upsert a single tag colour. Pass color = null to remove. */
+export async function setTagColor(
+  userId: string,
+  tag: string,
+  color: string | null,
+): Promise<void> {
+  if (color === null) {
+    await supabase
+      .from('user_tag_colors')
+      .delete()
+      .match({ user_id: userId, tag });
+  } else {
+    await supabase
+      .from('user_tag_colors')
+      .upsert({ user_id: userId, tag, color });
+  }
+}

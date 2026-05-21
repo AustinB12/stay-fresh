@@ -23,12 +23,16 @@ import { Camera, ImagePlus, Plus, ScanBarcode } from 'lucide-react';
 import { toast } from 'sonner';
 import { BarcodeScanner } from './BarcodeScanner';
 import { lookupBarcode } from '@/lib/openFoodFacts';
+import { TagInput } from './TagInput';
 
 interface AddItemDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   userId: string | undefined;
   onSuccess: () => void;
+  userTags?: string[];
+  tagColors?: Record<string, string>;
+  onTagColorChange?: (tag: string, color: string | null) => void;
 }
 
 export function AddItemDialog({
@@ -36,6 +40,9 @@ export function AddItemDialog({
   onOpenChange,
   userId,
   onSuccess,
+  userTags = [],
+  tagColors = {},
+  onTagColorChange,
 }: AddItemDialogProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -46,6 +53,7 @@ export function AddItemDialog({
     quantity: 1,
     unit: 'pcs',
     expiry_date: null as string | null,
+    tags: [] as string[],
   });
 
   const resetForm = () => {
@@ -58,6 +66,7 @@ export function AddItemDialog({
       quantity: 1,
       unit: 'pcs',
       expiry_date: null,
+      tags: [],
     });
   };
 
@@ -148,7 +157,7 @@ export function AddItemDialog({
         <div className='grid gap-4 py-4'>
           <div className='grid gap-2'>
             <Label>Item Photo</Label>
-            <div className='relative w-full h-36 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group'>
+            <div className='relative w-full h-72 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group'>
               {imagePreview ? (
                 <img
                   src={imagePreview}
@@ -306,6 +315,16 @@ export function AddItemDialog({
               onChange={(e) =>
                 setNewItem({ ...newItem, expiry_date: e.target.value || null })
               }
+            />
+          </div>
+          <div className='grid gap-2'>
+            <Label>Tags (Optional)</Label>
+            <TagInput
+              tags={newItem.tags}
+              onChange={(tags) => setNewItem({ ...newItem, tags })}
+              suggestions={userTags}
+              tagColors={tagColors}
+              onColorChange={onTagColorChange}
             />
           </div>
         </div>

@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { fetchTagColors, setTagColor } from '@/lib/supabase';
 import { Item } from '@/types/database';
 import { useAuth } from './AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
+import { getTagBadgeClass, TagColorKey } from '@/lib/tagColors';
 import {
   Plus,
   ShoppingBasket,
@@ -28,6 +31,7 @@ const InventoryGrid = memo(
     icon: Icon,
     title,
     isSearching = false,
+    tagColors,
     onEdit,
     onRemove,
     onUpdateQuantity,
@@ -36,6 +40,7 @@ const InventoryGrid = memo(
     icon: any;
     title: string;
     isSearching?: boolean;
+    tagColors?: Record<string, string>;
     onEdit: (item: Item) => void;
     onRemove: (id: string, name: string) => void;
     onUpdateQuantity: (id: string, quantity: number) => void;
@@ -70,6 +75,7 @@ const InventoryGrid = memo(
                 onEdit={onEdit}
                 onRemove={onRemove}
                 onUpdateQuantity={onUpdateQuantity}
+                tagColors={tagColors}
               />
             ))}
           </AnimatePresence>
@@ -84,6 +90,8 @@ export default function Inventory() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTags, setActiveTags] = useState<string[]>([]);
+  const [tagColors, setTagColors] = useState<Record<string, string>>({});
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isQuickAddDialogOpen, setIsQuickAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -101,19 +109,22 @@ export default function Inventory() {
   const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('items')
-        .select('*')
-        .order('expiry_date', { ascending: true, nullsFirst: false });
-
-      if (error) throw error;
-      setItems(data || []);
+      const [itemsResult, colors] = await Promise.all([
+        supabase
+          .from('items')
+          .select('*')
+          .order('expiry_date', { ascending: true, nullsFirst: false }),
+        fetchTagColors(user?.id ?? ''),
+      ]);
+      if (itemsResult.error) throw itemsResult.error;
+      setItems(itemsResult.data || []);
+      setTagColors(colors);
     } catch (error: any) {
       toast.error('Failed to load inventory: ' + error.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const removeItem = useCallback(
     async (id: string, name: string) => {
@@ -131,7 +142,8 @@ export default function Inventory() {
 
   const editItem = async () => {
     if (!editingItem) return;
-    const { id, name, category, quantity, unit, expiry_date } = editingItem;
+    const { id, name, category, quantity, unit, expiry_date, tags } =
+      editingItem;
     try {
       let image_url = editingItem.image_url ?? null;
       if (pendingImageFile) {
@@ -159,6 +171,7 @@ export default function Inventory() {
           unit,
           expiry_date: expiry_date || null,
           image_url,
+          tags: tags ?? [],
         })
         .match({ id });
       if (error) throw error;
@@ -173,6 +186,19 @@ export default function Inventory() {
       toast.error('Failed to update item: ' + error.message);
     }
   };
+
+  const handleTagColorChange = useCallback(
+    async (tag: string, color: string | null) => {
+      setTagColors((prev) => {
+        const next = { ...prev };
+        if (color === null) delete next[tag];
+        else next[tag] = color;
+        return next;
+      });
+      await setTagColor(user!.id, tag, color);
+    },
+    [user],
+  );
 
   const openEditDialog = useCallback((item: Item) => {
     setEditingItem({ ...item });
@@ -218,13 +244,22 @@ export default function Inventory() {
     item.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const fridgeItems = filteredItems.filter(
+  const allTags = [...new Set(items.flatMap((item) => item.tags ?? []))].sort();
+
+  const tagFilteredItems =
+    activeTags.length === 0
+      ? filteredItems
+      : filteredItems.filter((item) =>
+          activeTags.some((tag) => (item.tags ?? []).includes(tag)),
+        );
+
+  const fridgeItems = tagFilteredItems.filter(
     (item) => item.category === 'fridge',
   );
-  const pantryItems = filteredItems.filter(
+  const pantryItems = tagFilteredItems.filter(
     (item) => item.category === 'pantry',
   );
-  const freezerItems = filteredItems.filter(
+  const freezerItems = tagFilteredItems.filter(
     (item) => item.category === 'freezer',
   );
 
@@ -268,6 +303,9 @@ export default function Inventory() {
             onOpenChange={setIsAddDialogOpen}
             userId={user?.id}
             onSuccess={fetchItems}
+            userTags={allTags}
+            tagColors={tagColors}
+            onTagColorChange={handleTagColorChange}
           />
           <QuickAddItemDialog
             isOpen={isQuickAddDialogOpen}
@@ -284,6 +322,9 @@ export default function Inventory() {
             setPendingImagePreview={setPendingImagePreview}
             setPendingImageFile={setPendingImageFile}
             editItem={editItem}
+            userTags={allTags}
+            tagColors={tagColors}
+            onTagColorChange={handleTagColorChange}
           />
         </div>
       </header>
@@ -295,102 +336,150 @@ export default function Inventory() {
       ) : filteredItems.length === 0 && searchTerm === '' ? (
         <EmptyState />
       ) : (
-        <Tabs defaultValue='all' className='space-y-8 flex-col'>
-          <TabsList className='bg-zinc-100 dark:bg-zinc-800 p-1 rounded-2xl flex w-full md:w-fit overflow-x-auto no-scrollbar'>
-            <TabsTrigger
-              value='all'
-              className='rounded-xl px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm'
-            >
-              All Items
-            </TabsTrigger>
-            <TabsTrigger
-              value='fridge'
-              className='rounded-xl px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm'
-            >
-              Fridge
-            </TabsTrigger>
-            <TabsTrigger
-              value='pantry'
-              className='rounded-xl px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm'
-            >
-              Pantry
-            </TabsTrigger>
-            <TabsTrigger
-              value='freezer'
-              className='rounded-xl px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm'
-            >
-              Freezer
-            </TabsTrigger>
-          </TabsList>
+        <div className='space-y-4'>
+          {allTags.length > 0 && (
+            <div className='flex flex-wrap items-center gap-2'>
+              <span className='text-xs font-medium text-zinc-500 dark:text-zinc-400'>
+                Filter by tag:
+              </span>
+              {allTags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant={activeTags.includes(tag) ? 'default' : 'outline'}
+                  className={cn(
+                    'cursor-pointer select-none transition-opacity',
+                    getTagBadgeClass(tagColors[tag]) ??
+                      (activeTags.includes(tag)
+                        ? ''
+                        : 'border-zinc-300 dark:border-zinc-600 text-zinc-500 dark:text-zinc-400'),
+                    !activeTags.includes(tag) && 'opacity-70',
+                  )}
+                  onClick={() =>
+                    setActiveTags((prev) =>
+                      prev.includes(tag)
+                        ? prev.filter((t) => t !== tag)
+                        : [...prev, tag],
+                    )
+                  }
+                >
+                  {tag}
+                </Badge>
+              ))}
+              {activeTags.length > 0 && (
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  className='h-6 px-2 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                  onClick={() => setActiveTags([])}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+          )}
+          <Tabs defaultValue='all' className='space-y-8 flex-col'>
+            <TabsList className='bg-zinc-100 dark:bg-zinc-800 p-1 rounded-2xl flex w-full md:w-fit overflow-x-auto no-scrollbar'>
+              <TabsTrigger
+                value='all'
+                className='rounded-xl px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm'
+              >
+                All Items
+              </TabsTrigger>
+              <TabsTrigger
+                value='fridge'
+                className='rounded-xl px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm'
+              >
+                Fridge
+              </TabsTrigger>
+              <TabsTrigger
+                value='pantry'
+                className='rounded-xl px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm'
+              >
+                Pantry
+              </TabsTrigger>
+              <TabsTrigger
+                value='freezer'
+                className='rounded-xl px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm'
+              >
+                Freezer
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value='all' className='space-y-6'>
-            <InventoryGrid
-              isSearching={searchTerm !== ''}
-              items={fridgeItems}
-              icon={Refrigerator}
-              title='Fridge'
-              onEdit={openEditDialog}
-              onRemove={removeItem}
-              onUpdateQuantity={updateQuantity}
-            />
-            <div className='h-px bg-zinc-100 dark:bg-zinc-800' />
-            <InventoryGrid
-              isSearching={searchTerm !== ''}
-              items={pantryItems}
-              icon={Container}
-              title='Pantry'
-              onEdit={openEditDialog}
-              onRemove={removeItem}
-              onUpdateQuantity={updateQuantity}
-            />
-            <div className='h-px bg-zinc-100 dark:bg-zinc-800' />
-            <InventoryGrid
-              isSearching={searchTerm !== ''}
-              items={freezerItems}
-              icon={Snowflake}
-              title='Freezer'
-              onEdit={openEditDialog}
-              onRemove={removeItem}
-              onUpdateQuantity={updateQuantity}
-            />
-          </TabsContent>
+            <TabsContent value='all' className='space-y-6'>
+              <InventoryGrid
+                isSearching={searchTerm !== ''}
+                items={fridgeItems}
+                icon={Refrigerator}
+                title='Fridge'
+                tagColors={tagColors}
+                onEdit={openEditDialog}
+                onRemove={removeItem}
+                onUpdateQuantity={updateQuantity}
+              />
+              <div className='h-px bg-zinc-100 dark:bg-zinc-800' />
+              <InventoryGrid
+                isSearching={searchTerm !== ''}
+                items={pantryItems}
+                icon={Container}
+                title='Pantry'
+                tagColors={tagColors}
+                onEdit={openEditDialog}
+                onRemove={removeItem}
+                onUpdateQuantity={updateQuantity}
+              />
+              <div className='h-px bg-zinc-100 dark:bg-zinc-800' />
+              <InventoryGrid
+                isSearching={searchTerm !== ''}
+                items={freezerItems}
+                icon={Snowflake}
+                title='Freezer'
+                tagColors={tagColors}
+                onEdit={openEditDialog}
+                onRemove={removeItem}
+                onUpdateQuantity={updateQuantity}
+              />
+            </TabsContent>
 
-          <TabsContent value='fridge'>
-            <InventoryGrid
-              isSearching={searchTerm !== ''}
-              items={fridgeItems}
-              icon={Refrigerator}
-              title='Fridge'
-              onEdit={openEditDialog}
-              onRemove={removeItem}
-              onUpdateQuantity={updateQuantity}
-            />
-          </TabsContent>
+            <TabsContent value='fridge'>
+              <InventoryGrid
+                isSearching={searchTerm !== ''}
+                items={fridgeItems}
+                icon={Refrigerator}
+                title='Fridge'
+                tagColors={tagColors}
+                onEdit={openEditDialog}
+                onRemove={removeItem}
+                onUpdateQuantity={updateQuantity}
+              />
+            </TabsContent>
 
-          <TabsContent value='pantry'>
-            <InventoryGrid
-              isSearching={searchTerm !== ''}
-              items={pantryItems}
-              icon={Container}
-              title='Pantry'
-              onEdit={openEditDialog}
-              onRemove={removeItem}
-              onUpdateQuantity={updateQuantity}
-            />
-          </TabsContent>
+            <TabsContent value='pantry'>
+              <InventoryGrid
+                isSearching={searchTerm !== ''}
+                items={pantryItems}
+                icon={Container}
+                title='Pantry'
+                tagColors={tagColors}
+                onEdit={openEditDialog}
+                onRemove={removeItem}
+                onUpdateQuantity={updateQuantity}
+              />
+            </TabsContent>
 
-          <TabsContent value='freezer'>
-            <InventoryGrid
-              isSearching={searchTerm !== ''}
-              items={freezerItems}
-              icon={Snowflake}
-              title='Freezer'
-              onEdit={openEditDialog}
-              onRemove={removeItem}
-              onUpdateQuantity={updateQuantity}
-            />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value='freezer'>
+              <InventoryGrid
+                isSearching={searchTerm !== ''}
+                items={freezerItems}
+                icon={Snowflake}
+                title='Freezer'
+                tagColors={tagColors}
+                onEdit={openEditDialog}
+                onRemove={removeItem}
+                onUpdateQuantity={updateQuantity}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
       )}
 
       {filteredItems.length === 0 && searchTerm !== '' && (

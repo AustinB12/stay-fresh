@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Camera, ImagePlus } from 'lucide-react';
+import { TagInput } from './TagInput';
 
 export function EditItemDialog({
   isEditDialogOpen,
@@ -27,6 +28,9 @@ export function EditItemDialog({
   setPendingImagePreview,
   setPendingImageFile,
   editItem,
+  userTags = [] as string[],
+  tagColors = {} as Record<string, string>,
+  onTagColorChange,
 }) {
   return (
     <Dialog
@@ -49,7 +53,7 @@ export function EditItemDialog({
           <div className='grid gap-4 py-4'>
             <div className='grid gap-2'>
               <Label>Item Photo</Label>
-              <div className='relative w-full h-64 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group'>
+              <div className='relative w-full h-72 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group'>
                 {pendingImagePreview || editingItem.image_url ? (
                   <img
                     src={(pendingImagePreview || editingItem.image_url)!}
@@ -207,6 +211,16 @@ export function EditItemDialog({
                     expiry_date: e.target.value,
                   })
                 }
+              />
+            </div>
+            <div className='grid gap-2'>
+              <Label>Tags (Optional)</Label>
+              <TagInput
+                tags={editingItem.tags ?? []}
+                onChange={(tags) => setEditingItem({ ...editingItem, tags })}
+                suggestions={userTags}
+                tagColors={tagColors}
+                onColorChange={onTagColorChange}
               />
             </div>
           </div>

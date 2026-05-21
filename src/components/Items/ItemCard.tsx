@@ -23,6 +23,8 @@ import {
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
 import { getExpiryStatus } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { getTagBadgeClass } from '@/lib/tagColors';
 
 const iconClass = 'h-10 w-10 text-zinc-300 dark:text-zinc-600';
 
@@ -47,11 +49,13 @@ export const ItemCard = memo(
     onEdit,
     onRemove,
     onUpdateQuantity,
+    tagColors = {},
   }: {
     item: Item;
     onEdit: (item: Item) => void;
     onRemove: (id: string, name: string) => void;
     onUpdateQuantity: (id: string, quantity: number) => void;
+    tagColors?: Record<string, string>;
   }) => {
     const status = getExpiryStatus(item.expiry_date);
     const [imgError, setImgError] = useState(false);
@@ -117,7 +121,7 @@ export const ItemCard = memo(
             )}
           </CardDescription>
           <div className='px-4 py-2 flex justify-center'>
-            <div className='w-full h-64 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center'>
+            <div className='w-full h-72 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center'>
               {!imgError ? (
                 item.image_url ? (
                   <img
@@ -134,6 +138,23 @@ export const ItemCard = memo(
               )}
             </div>
           </div>
+          {(item.tags ?? []).length > 0 && (
+            <div className='flex flex-wrap gap-1 px-4 pb-1'>
+              {(item.tags ?? []).map((tag) => (
+                <Badge
+                  key={tag}
+                  variant='outline'
+                  className={cn(
+                    'text-[10px] px-1.5 py-0 h-4 border',
+                    getTagBadgeClass(tagColors[tag]) ??
+                      'border-zinc-300 dark:border-zinc-600 text-zinc-500 dark:text-zinc-400',
+                  )}
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
           <CardContent className='mt-auto pt-2 pb-2'>
             <div className='flex items-center justify-center'>
               <div className='flex w-full justify-between items-center space-x-3'>
