@@ -1,6 +1,6 @@
 {
-  "name": "Stay Fresh",
-  "description": "Keep track of your kitchen inventory and reduce food waste with ease.",
-  "requestFramePermissions": [],
-  "majorCapabilities": []
+	"name": "Stay Fresh",
+	"description": "Keep track of your kitchen inventory and reduce food waste with ease.",
+	"requestFramePermissions": [],
+	"majorCapabilities": []
 }
