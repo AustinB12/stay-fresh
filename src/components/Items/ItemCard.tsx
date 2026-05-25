@@ -48,12 +48,14 @@ export const ItemCard = memo(
 		onEdit,
 		onRemove,
 		onUpdateQuantity,
+		onUpdatePercentage,
 		tagColors = {},
 	}: {
 		item: Item
 		onEdit: (item: Item) => void
 		onRemove: (id: string, name: string) => void
 		onUpdateQuantity: (id: string, quantity: number) => void
+		onUpdatePercentage: (id: string, percentage: number) => void
 		tagColors?: Record<string, string>
 	}) => {
 		const status = getExpiryStatus(item.expiry_date)
@@ -155,36 +157,84 @@ export const ItemCard = memo(
 						</div>
 					)}
 					<CardContent className="mt-auto pt-2 pb-2">
-						<div className="flex items-center justify-center">
-							<div className="flex w-full justify-between items-center space-x-3">
+						{item.tracking_type === 'percentage' ? (
+							<div className="flex items-center gap-2">
 								<Button
 									variant="outline"
 									size="icon"
-									className="h-10 w-16 hover:cursor-pointer"
-									onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+									className="h-10 w-16 shrink-0 hover:cursor-pointer"
+									onClick={() =>
+										onUpdatePercentage(
+											item.id,
+											Math.max(0, (item.percentage_remaining ?? 100) - 10),
+										)
+									}
 								>
 									<Minus className="h-5 w-5" />
 								</Button>
-								<span className="text-sm font-medium w-12 text-center text-nowrap">
-									{item.quantity}{' '}
-									<span className="text-zinc-500 text-xs ml-1">
-										{item.unit}
-										{item.quantity > 1 &&
-										item.unit.lastIndexOf('s') !== item.unit.length - 1
-											? 's'
-											: ''}
-									</span>
-								</span>
+								<div className="flex-1 space-y-1">
+									<div className="w-full h-2 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
+										<div
+											className={`h-full rounded-full transition-all ${
+												(item.percentage_remaining ?? 100) >= 50
+													? 'bg-green-500'
+													: (item.percentage_remaining ?? 100) >= 25
+														? 'bg-yellow-500'
+														: 'bg-red-500'
+											}`}
+											style={{ width: `${item.percentage_remaining ?? 100}%` }}
+										/>
+									</div>
+									<p className="text-xs text-center text-zinc-500 dark:text-zinc-400">
+										{item.percentage_remaining ?? 100}% remaining
+									</p>
+								</div>
 								<Button
 									variant="outline"
 									size="icon"
-									className="h-10 w-16 hover:cursor-pointer"
-									onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+									className="h-10 w-16 shrink-0 hover:cursor-pointer"
+									onClick={() =>
+										onUpdatePercentage(
+											item.id,
+											Math.min(100, (item.percentage_remaining ?? 100) + 10),
+										)
+									}
 								>
 									<Plus className="h-5 w-5" />
 								</Button>
 							</div>
-						</div>
+						) : (
+							<div className="flex items-center justify-center">
+								<div className="flex w-full justify-between items-center space-x-3">
+									<Button
+										variant="outline"
+										size="icon"
+										className="h-10 w-16 hover:cursor-pointer"
+										onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+									>
+										<Minus className="h-5 w-5" />
+									</Button>
+									<span className="text-sm font-medium w-12 text-center text-nowrap">
+										{item.quantity}{' '}
+										<span className="text-zinc-500 text-xs ml-1">
+											{item.unit}
+											{item.quantity > 1 &&
+											item.unit.lastIndexOf('s') !== item.unit.length - 1
+												? 's'
+												: ''}
+										</span>
+									</span>
+									<Button
+										variant="outline"
+										size="icon"
+										className="h-10 w-16 hover:cursor-pointer"
+										onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+									>
+										<Plus className="h-5 w-5" />
+									</Button>
+								</div>
+							</div>
+						)}
 					</CardContent>
 				</Card>
 			</motion.div>

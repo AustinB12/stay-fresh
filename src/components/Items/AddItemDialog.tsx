@@ -54,6 +54,8 @@ export function AddItemDialog({
 		unit: 'pcs',
 		expiry_date: null as string | null,
 		tags: [] as string[],
+		tracking_type: 'quantity' as 'quantity' | 'percentage',
+		percentage_remaining: 100,
 	})
 
 	const resetForm = () => {
@@ -67,6 +69,8 @@ export function AddItemDialog({
 			unit: 'pcs',
 			expiry_date: null,
 			tags: [],
+			tracking_type: 'quantity',
+			percentage_remaining: 100,
 		})
 	}
 
@@ -280,30 +284,82 @@ export function AddItemDialog({
 							</Select>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="quantity">Quantity</Label>
-							<div className="flex space-x-2">
-								<Input
-									id="quantity"
-									type="number"
-									className="w-20"
-									value={newItem.quantity}
-									onChange={(e) =>
-										setNewItem({
-											...newItem,
-											quantity: Number(e.target.value),
-										})
-									}
-								/>
-								<Input
-									id="unit"
-									placeholder="pcs"
-									className="grow"
-									value={newItem.unit}
-									onChange={(e) =>
-										setNewItem({ ...newItem, unit: e.target.value })
-									}
-								/>
+							<div className="flex items-center justify-between gap-1">
+								<Label>Tracking</Label>
+								<div className="flex rounded-md border border-zinc-200 dark:border-zinc-700 overflow-hidden text-xs">
+									<button
+										type="button"
+										className={`px-3 py-1 font-medium transition-colors ${
+											newItem.tracking_type === 'quantity'
+												? 'bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900'
+												: 'bg-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+										}`}
+										onClick={() =>
+											setNewItem({ ...newItem, tracking_type: 'quantity' })
+										}
+									>
+										Quantity
+									</button>
+									<button
+										type="button"
+										className={`px-3 py-1 font-medium transition-colors ${
+											newItem.tracking_type === 'percentage'
+												? 'bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900'
+												: 'bg-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+										}`}
+										onClick={() =>
+											setNewItem({ ...newItem, tracking_type: 'percentage' })
+										}
+									>
+										% Remaining
+									</button>
+								</div>
 							</div>
+							{newItem.tracking_type === 'quantity' ? (
+								<div className="flex space-x-2">
+									<Input
+										id="quantity"
+										type="number"
+										className="w-20"
+										value={newItem.quantity}
+										onChange={(e) =>
+											setNewItem({
+												...newItem,
+												quantity: Number(e.target.value),
+											})
+										}
+									/>
+									<Input
+										id="unit"
+										placeholder="pcs"
+										className="grow"
+										value={newItem.unit}
+										onChange={(e) =>
+											setNewItem({ ...newItem, unit: e.target.value })
+										}
+									/>
+								</div>
+							) : (
+								<div className="space-y-2">
+									<input
+										type="range"
+										min={0}
+										max={100}
+										step={5}
+										value={newItem.percentage_remaining}
+										onChange={(e) =>
+											setNewItem({
+												...newItem,
+												percentage_remaining: Number(e.target.value),
+											})
+										}
+										className="w-full accent-green-600"
+									/>
+									<p className="text-sm text-center font-medium text-zinc-700 dark:text-zinc-300">
+										{newItem.percentage_remaining}% remaining
+									</p>
+								</div>
+							)}
 						</div>
 					</div>
 					<div className="grid gap-2">

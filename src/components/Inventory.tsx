@@ -35,6 +35,7 @@ const InventoryGrid = memo(
 		onEdit,
 		onRemove,
 		onUpdateQuantity,
+		onUpdatePercentage,
 	}: {
 		items: Item[]
 		icon: React.ForwardRefExoticComponent<
@@ -46,6 +47,7 @@ const InventoryGrid = memo(
 		onEdit: (item: Item) => void
 		onRemove: (id: string, name: string) => void
 		onUpdateQuantity: (id: string, quantity: number) => void
+		onUpdatePercentage: (id: string, percentage: number) => void
 	}) => (
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
@@ -77,6 +79,7 @@ const InventoryGrid = memo(
 								onEdit={onEdit}
 								onRemove={onRemove}
 								onUpdateQuantity={onUpdateQuantity}
+								onUpdatePercentage={onUpdatePercentage}
 								tagColors={tagColors}
 							/>
 						))}
@@ -136,7 +139,7 @@ export default function Inventory() {
 				toast.success(`${name} removed`)
 				fetchItems()
 			} catch (error: any) {
-				toast.error('Failed to remove item: ' + error.message)
+				toast.error(`Failed to remove item: ${error.message}`)
 			}
 		},
 		[fetchItems],
@@ -144,8 +147,17 @@ export default function Inventory() {
 
 	const editItem = async () => {
 		if (!editingItem) return
-		const { id, name, category, quantity, unit, expiry_date, tags } =
-			editingItem
+		const {
+			id,
+			name,
+			category,
+			quantity,
+			unit,
+			expiry_date,
+			tags,
+			tracking_type,
+			percentage_remaining,
+		} = editingItem
 		try {
 			let image_url = editingItem.image_url ?? null
 			if (pendingImageFile) {
@@ -174,6 +186,9 @@ export default function Inventory() {
 					expiry_date: expiry_date || null,
 					image_url,
 					tags: tags ?? [],
+					tracking_type,
+					percentage_remaining:
+						tracking_type === 'percentage' ? percentage_remaining : null,
 				})
 				.match({ id })
 			if (error) throw error
@@ -185,7 +200,7 @@ export default function Inventory() {
 			setEditingItem(null)
 			fetchItems()
 		} catch (error: any) {
-			toast.error('Failed to update item: ' + error.message)
+			toast.error(`Failed to update item: ${error.message}`)
 		}
 	}
 
@@ -236,7 +251,40 @@ export default function Inventory() {
 						),
 					)
 				}
-				toast.error('Failed to update quantity: ' + error.message)
+				toast.error(`Failed to update quantity: ${error.message}`)
+			}
+		},
+		[],
+	)
+
+	const updatePercentage = useCallback(
+		async (id: string, newPercentage: number) => {
+			let previousPercentage: number | null | undefined
+			setItems((prev) => {
+				previousPercentage = prev.find((i) => i.id === id)?.percentage_remaining
+				return prev.map((i) =>
+					i.id === id ? { ...i, percentage_remaining: newPercentage } : i,
+				)
+			})
+
+			try {
+				const { error } = await (supabase as any)
+					.from('items')
+					.update({ percentage_remaining: newPercentage })
+					.match({ id })
+
+				if (error) throw error
+			} catch (error: any) {
+				if (previousPercentage !== undefined) {
+					setItems((prev) =>
+						prev.map((i) =>
+							i.id === id
+								? { ...i, percentage_remaining: previousPercentage ?? null }
+								: i,
+						),
+					)
+				}
+				toast.error(`Failed to update percentage: ${error.message}`)
 			}
 		},
 		[],
@@ -417,6 +465,7 @@ export default function Inventory() {
 								onEdit={openEditDialog}
 								onRemove={removeItem}
 								onUpdateQuantity={updateQuantity}
+								onUpdatePercentage={updatePercentage}
 							/>
 							<div className="h-px bg-zinc-100 dark:bg-zinc-800" />
 							<InventoryGrid
@@ -428,6 +477,7 @@ export default function Inventory() {
 								onEdit={openEditDialog}
 								onRemove={removeItem}
 								onUpdateQuantity={updateQuantity}
+								onUpdatePercentage={updatePercentage}
 							/>
 							<div className="h-px bg-zinc-100 dark:bg-zinc-800" />
 							<InventoryGrid
@@ -439,6 +489,7 @@ export default function Inventory() {
 								onEdit={openEditDialog}
 								onRemove={removeItem}
 								onUpdateQuantity={updateQuantity}
+								onUpdatePercentage={updatePercentage}
 							/>
 						</TabsContent>
 
@@ -452,6 +503,7 @@ export default function Inventory() {
 								onEdit={openEditDialog}
 								onRemove={removeItem}
 								onUpdateQuantity={updateQuantity}
+								onUpdatePercentage={updatePercentage}
 							/>
 						</TabsContent>
 
@@ -465,6 +517,7 @@ export default function Inventory() {
 								onEdit={openEditDialog}
 								onRemove={removeItem}
 								onUpdateQuantity={updateQuantity}
+								onUpdatePercentage={updatePercentage}
 							/>
 						</TabsContent>
 
@@ -478,6 +531,7 @@ export default function Inventory() {
 								onEdit={openEditDialog}
 								onRemove={removeItem}
 								onUpdateQuantity={updateQuantity}
+								onUpdatePercentage={updatePercentage}
 							/>
 						</TabsContent>
 					</Tabs>

@@ -44,7 +44,7 @@ export function EditItemDialog({
 				}
 			}}
 		>
-			<DialogContent className="sm:max-w-106.25">
+			<DialogContent className="sm:max-w-106.25 md:max-w-3xl">
 				<DialogHeader>
 					<DialogTitle>Edit Item</DialogTitle>
 					<CardDescription>Update the details for this item.</CardDescription>
@@ -152,8 +152,8 @@ export function EditItemDialog({
 								}
 							/>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
+						<div className="grid grid-cols-5 gap-4">
+							<div className="grid gap-2 col-span-2">
 								<Label htmlFor="edit-category">Location</Label>
 								<Select
 									value={editingItem.category}
@@ -171,31 +171,89 @@ export function EditItemDialog({
 									</SelectContent>
 								</Select>
 							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-quantity">Quantity</Label>
-								<div className="flex space-x-2">
-									<Input
-										id="edit-quantity"
-										type="number"
-										className="w-20"
-										value={editingItem.quantity}
-										onChange={(e) =>
-											setEditingItem({
-												...editingItem,
-												quantity: Number(e.target.value),
-											})
-										}
-									/>
-									<Input
-										id="edit-unit"
-										placeholder="pcs"
-										className="grow"
-										value={editingItem.unit}
-										onChange={(e) =>
-											setEditingItem({ ...editingItem, unit: e.target.value })
-										}
-									/>
+							<div className="grid gap-2 col-span-3">
+								<div className="flex items-center justify-between gap-1">
+									<Label>Tracking</Label>
+									<div className="flex rounded-md border border-zinc-200 dark:border-zinc-700 overflow-hidden text-xs">
+										<button
+											type="button"
+											className={`px-3 py-1 font-medium transition-colors ${
+												editingItem.tracking_type === 'percentage'
+													? 'bg-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+													: 'bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900'
+											}`}
+											onClick={() =>
+												setEditingItem({
+													...editingItem,
+													tracking_type: 'quantity',
+												})
+											}
+										>
+											Quantity
+										</button>
+										<button
+											type="button"
+											className={`px-3 py-1 font-medium transition-colors ${
+												editingItem.tracking_type === 'percentage'
+													? 'bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900'
+													: 'bg-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+											}`}
+											onClick={() =>
+												setEditingItem({
+													...editingItem,
+													tracking_type: 'percentage',
+												})
+											}
+										>
+											% Left
+										</button>
+									</div>
 								</div>
+								{editingItem.tracking_type === 'percentage' ? (
+									<div className="space-y-2">
+										<input
+											type="range"
+											min={0}
+											max={100}
+											step={5}
+											value={editingItem.percentage_remaining ?? 100}
+											onChange={(e) =>
+												setEditingItem({
+													...editingItem,
+													percentage_remaining: Number(e.target.value),
+												})
+											}
+											className="w-full accent-green-600"
+										/>
+										<p className="text-sm text-center font-medium text-zinc-700 dark:text-zinc-300">
+											{editingItem.percentage_remaining ?? 100}% remaining
+										</p>
+									</div>
+								) : (
+									<div className="flex space-x-2">
+										<Input
+											id="edit-quantity"
+											type="number"
+											className="w-20"
+											value={editingItem.quantity}
+											onChange={(e) =>
+												setEditingItem({
+													...editingItem,
+													quantity: Number(e.target.value),
+												})
+											}
+										/>
+										<Input
+											id="edit-unit"
+											placeholder="pcs"
+											className="grow"
+											value={editingItem.unit}
+											onChange={(e) =>
+												setEditingItem({ ...editingItem, unit: e.target.value })
+											}
+										/>
+									</div>
+								)}
 							</div>
 						</div>
 						<div className="grid gap-2">
