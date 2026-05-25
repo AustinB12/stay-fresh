@@ -64,7 +64,12 @@ export default function App() {
 							className="flex items-center space-x-2 hover:cursor-pointer"
 							onClick={() => setView('inventory')}
 						>
-							<svg height="36" viewBox="0 0 142 177" fill="none">
+							<svg
+								aria-label="An apple"
+								height="36"
+								viewBox="0 0 142 177"
+								fill="none"
+							>
 								<path
 									d="M50.5 21.2861C71.5 34.2861 73.7405 53.971 71.5 80.7861"
 									stroke="#227527"

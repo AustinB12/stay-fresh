@@ -199,181 +199,175 @@ export default function Login() {
 						)}
 
 						{/* ── Sign Up ── */}
-						{view === 'signup' && (
-							<>
-								{signUpSuccess ? (
-									<div className="text-center space-y-4 py-4">
-										<div className="mx-auto bg-green-100 dark:bg-green-900/30 h-14 w-14 rounded-2xl flex items-center justify-center">
-											<Mail className="h-7 w-7 text-green-600" />
+						{view === 'signup' &&
+							(signUpSuccess ? (
+								<div className="text-center space-y-4 py-4">
+									<div className="mx-auto bg-green-100 dark:bg-green-900/30 h-14 w-14 rounded-2xl flex items-center justify-center">
+										<Mail className="h-7 w-7 text-green-600" />
+									</div>
+									<div>
+										<p className="font-bold text-zinc-900 dark:text-zinc-50">
+											Check your inbox
+										</p>
+										<p className="text-sm text-zinc-500 mt-1">
+											We sent a confirmation link to{' '}
+											<span className="font-medium">{email}</span>.
+										</p>
+									</div>
+									<button
+										type="button"
+										className="text-sm text-green-600 font-semibold hover:underline cursor-pointer"
+										onClick={() => switchView('signin')}
+									>
+										Back to sign in
+									</button>
+								</div>
+							) : (
+								<>
+									<div className="space-y-3">
+										<div className="grid gap-1.5">
+											<Label htmlFor="signup-email">Email</Label>
+											<Input
+												id="signup-email"
+												type="email"
+												placeholder="you@example.com"
+												value={email}
+												onChange={(e) => setEmail(e.target.value)}
+											/>
 										</div>
-										<div>
-											<p className="font-bold text-zinc-900 dark:text-zinc-50">
-												Check your inbox
-											</p>
-											<p className="text-sm text-zinc-500 mt-1">
-												We sent a confirmation link to{' '}
-												<span className="font-medium">{email}</span>.
-											</p>
+										<div className="grid gap-1.5">
+											<Label htmlFor="signup-password">Password</Label>
+											<Input
+												id="signup-password"
+												type="password"
+												placeholder="Min. 8 characters"
+												value={password}
+												onChange={(e) => setPassword(e.target.value)}
+											/>
 										</div>
+										<div className="grid gap-1.5">
+											<Label htmlFor="signup-confirm">Confirm Password</Label>
+											<Input
+												id="signup-confirm"
+												type="password"
+												placeholder="••••••••"
+												value={confirmPassword}
+												onChange={(e) => setConfirmPassword(e.target.value)}
+												onKeyDown={(e) => e.key === 'Enter' && handleSignUp()}
+											/>
+										</div>
+										{error && (
+											<p className="text-sm text-red-500 dark:text-red-400">
+												{error}
+											</p>
+										)}
+										<Button
+											onClick={handleSignUp}
+											disabled={submitting}
+											className="w-full h-11 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg shadow-green-600/20 transition-all active:scale-95 cursor-pointer"
+										>
+											{submitting ? 'Creating account…' : 'Create Account'}
+										</Button>
+									</div>
+
+									<div className="flex items-center gap-3">
+										<div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
+										<span className="text-xs text-zinc-400">or</span>
+										<div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
+									</div>
+
+									<Button
+										onClick={signInWithGoogle}
+										className="hover:cursor-pointer w-full h-11 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold shadow-xl shadow-zinc-900/10 flex items-center justify-center gap-3 transition-all active:scale-95"
+									>
+										<LogIn className="h-4 w-4" />
+										Sign up with Google
+									</Button>
+
+									<p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
+										Already have an account?{' '}
 										<button
 											type="button"
-											className="text-sm text-green-600 font-semibold hover:underline cursor-pointer"
+											className="text-green-600 font-semibold hover:underline cursor-pointer"
 											onClick={() => switchView('signin')}
 										>
-											Back to sign in
+											Sign in
 										</button>
-									</div>
-								) : (
-									<>
-										<div className="space-y-3">
-											<div className="grid gap-1.5">
-												<Label htmlFor="signup-email">Email</Label>
-												<Input
-													id="signup-email"
-													type="email"
-													placeholder="you@example.com"
-													value={email}
-													onChange={(e) => setEmail(e.target.value)}
-												/>
-											</div>
-											<div className="grid gap-1.5">
-												<Label htmlFor="signup-password">Password</Label>
-												<Input
-													id="signup-password"
-													type="password"
-													placeholder="Min. 8 characters"
-													value={password}
-													onChange={(e) => setPassword(e.target.value)}
-												/>
-											</div>
-											<div className="grid gap-1.5">
-												<Label htmlFor="signup-confirm">Confirm Password</Label>
-												<Input
-													id="signup-confirm"
-													type="password"
-													placeholder="••••••••"
-													value={confirmPassword}
-													onChange={(e) => setConfirmPassword(e.target.value)}
-													onKeyDown={(e) => e.key === 'Enter' && handleSignUp()}
-												/>
-											</div>
-											{error && (
-												<p className="text-sm text-red-500 dark:text-red-400">
-													{error}
-												</p>
-											)}
-											<Button
-												onClick={handleSignUp}
-												disabled={submitting}
-												className="w-full h-11 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg shadow-green-600/20 transition-all active:scale-95 cursor-pointer"
-											>
-												{submitting ? 'Creating account…' : 'Create Account'}
-											</Button>
-										</div>
-
-										<div className="flex items-center gap-3">
-											<div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
-											<span className="text-xs text-zinc-400">or</span>
-											<div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
-										</div>
-
-										<Button
-											onClick={signInWithGoogle}
-											className="hover:cursor-pointer w-full h-11 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold shadow-xl shadow-zinc-900/10 flex items-center justify-center gap-3 transition-all active:scale-95"
-										>
-											<LogIn className="h-4 w-4" />
-											Sign up with Google
-										</Button>
-
-										<p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
-											Already have an account?{' '}
-											<button
-												type="button"
-												className="text-green-600 font-semibold hover:underline cursor-pointer"
-												onClick={() => switchView('signin')}
-											>
-												Sign in
-											</button>
-										</p>
-									</>
-								)}
-							</>
-						)}
+									</p>
+								</>
+							))}
 
 						{/* ── Password Reset ── */}
-						{view === 'reset' && (
-							<>
-								{resetSent ? (
-									<div className="text-center space-y-4 py-4">
-										<div className="mx-auto bg-green-100 dark:bg-green-900/30 h-14 w-14 rounded-2xl flex items-center justify-center">
-											<Mail className="h-7 w-7 text-green-600" />
+						{view === 'reset' &&
+							(resetSent ? (
+								<div className="text-center space-y-4 py-4">
+									<div className="mx-auto bg-green-100 dark:bg-green-900/30 h-14 w-14 rounded-2xl flex items-center justify-center">
+										<Mail className="h-7 w-7 text-green-600" />
+									</div>
+									<div>
+										<p className="font-bold text-zinc-900 dark:text-zinc-50">
+											Reset link sent
+										</p>
+										<p className="text-sm text-zinc-500 mt-1">
+											Check your inbox at{' '}
+											<span className="font-medium">{email}</span>.
+										</p>
+									</div>
+									<button
+										type="button"
+										className="text-sm text-green-600 font-semibold hover:underline cursor-pointer"
+										onClick={() => switchView('signin')}
+									>
+										Back to sign in
+									</button>
+								</div>
+							) : (
+								<>
+									<div className="space-y-1">
+										<p className="font-semibold text-zinc-900 dark:text-zinc-50">
+											Reset your password
+										</p>
+										<p className="text-sm text-zinc-500">
+											Enter your email and we'll send you a reset link.
+										</p>
+									</div>
+									<div className="space-y-3">
+										<div className="grid gap-1.5">
+											<Label htmlFor="reset-email">Email</Label>
+											<Input
+												id="reset-email"
+												type="email"
+												placeholder="you@example.com"
+												value={email}
+												onChange={(e) => setEmail(e.target.value)}
+												onKeyDown={(e) => e.key === 'Enter' && handleReset()}
+											/>
 										</div>
-										<div>
-											<p className="font-bold text-zinc-900 dark:text-zinc-50">
-												Reset link sent
+										{error && (
+											<p className="text-sm text-red-500 dark:text-red-400">
+												{error}
 											</p>
-											<p className="text-sm text-zinc-500 mt-1">
-												Check your inbox at{' '}
-												<span className="font-medium">{email}</span>.
-											</p>
-										</div>
+										)}
+										<Button
+											onClick={handleReset}
+											disabled={submitting}
+											className="w-full h-11 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg shadow-green-600/20 transition-all active:scale-95 cursor-pointer"
+										>
+											{submitting ? 'Sending…' : 'Send Reset Link'}
+										</Button>
+									</div>
+
+									<p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
 										<button
 											type="button"
-											className="text-sm text-green-600 font-semibold hover:underline cursor-pointer"
+											className="text-green-600 font-semibold hover:underline cursor-pointer"
 											onClick={() => switchView('signin')}
 										>
 											Back to sign in
 										</button>
-									</div>
-								) : (
-									<>
-										<div className="space-y-1">
-											<p className="font-semibold text-zinc-900 dark:text-zinc-50">
-												Reset your password
-											</p>
-											<p className="text-sm text-zinc-500">
-												Enter your email and we'll send you a reset link.
-											</p>
-										</div>
-										<div className="space-y-3">
-											<div className="grid gap-1.5">
-												<Label htmlFor="reset-email">Email</Label>
-												<Input
-													id="reset-email"
-													type="email"
-													placeholder="you@example.com"
-													value={email}
-													onChange={(e) => setEmail(e.target.value)}
-													onKeyDown={(e) => e.key === 'Enter' && handleReset()}
-												/>
-											</div>
-											{error && (
-												<p className="text-sm text-red-500 dark:text-red-400">
-													{error}
-												</p>
-											)}
-											<Button
-												onClick={handleReset}
-												disabled={submitting}
-												className="w-full h-11 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg shadow-green-600/20 transition-all active:scale-95 cursor-pointer"
-											>
-												{submitting ? 'Sending…' : 'Send Reset Link'}
-											</Button>
-										</div>
-
-										<p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
-											<button
-												type="button"
-												className="text-green-600 font-semibold hover:underline cursor-pointer"
-												onClick={() => switchView('signin')}
-											>
-												Back to sign in
-											</button>
-										</p>
-									</>
-								)}
-							</>
-						)}
+									</p>
+								</>
+							))}
 					</CardContent>
 				</Card>
 			</motion.div>

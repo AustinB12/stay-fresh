@@ -212,7 +212,7 @@ export default function Inventory() {
 				else next[tag] = color
 				return next
 			})
-			await setTagColor(user!.id, tag, color)
+			await setTagColor(user?.id || '', tag, color)
 		},
 		[user],
 	)
@@ -247,7 +247,7 @@ export default function Inventory() {
 				if (previousQuantity !== undefined) {
 					setItems((prev) =>
 						prev.map((i) =>
-							i.id === id ? { ...i, quantity: previousQuantity! } : i,
+							i.id === id ? { ...i, quantity: previousQuantity as number } : i,
 						),
 					)
 				}

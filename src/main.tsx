@@ -6,7 +6,7 @@ import { AuthProvider } from '@/components/AuthProvider'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/contexts/ThemeProvider'
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById('root') as HTMLElement).render(
 	<StrictMode>
 		<ThemeProvider>
 			<AuthProvider>

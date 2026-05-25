@@ -56,7 +56,9 @@ export function EditItemDialog({
 							<div className="relative w-full h-72 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group">
 								{pendingImagePreview || editingItem.image_url ? (
 									<img
-										src={(pendingImagePreview || editingItem.image_url)!}
+										src={
+											(pendingImagePreview || editingItem.image_url) as string
+										}
 										alt={editingItem.name}
 										className="w-full h-full object-cover"
 									/>

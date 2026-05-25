@@ -150,7 +150,7 @@ export function QuickAddItemDialog({
 			onOpenChange(false)
 			onSuccess()
 		} catch (error: any) {
-			toast.error('Failed to add item: ' + error.message)
+			toast.error(`Failed to add item: ${error.message}`)
 		}
 	}
 
@@ -175,6 +175,7 @@ export function QuickAddItemDialog({
 				<div className="grid gap-4 py-4 grid-cols-2">
 					{quick_add_items.map((item) => (
 						<Button
+							key={item.name}
 							onClick={() =>
 								setSelectedTemplate(item.name as Quick_Add_Templates)
 							}

@@ -35,6 +35,7 @@ export function BarcodeScanner({
 		const video = videoElRef.current
 		if (video?.srcObject) {
 			const stream = video.srcObject as MediaStream
+			// biome-ignore lint/suspicious/useIterableCallbackReturn: need to stop each track
 			stream.getTracks().forEach((track) => track.stop())
 			video.srcObject = null
 		}
@@ -90,7 +91,7 @@ export function BarcodeScanner({
 					} else if (e.name === 'NotFoundError') {
 						setError('No camera found on this device.')
 					} else {
-						setError('Could not start camera: ' + e.message)
+						setError(`Could not start camera: ${e.message}`)
 					}
 					setScanning(false)
 				})

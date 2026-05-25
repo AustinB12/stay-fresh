@@ -140,7 +140,7 @@ export function AddItemDialog({
 			onOpenChange(false)
 			onSuccess()
 		} catch (error: any) {
-			toast.error('Failed to add item: ' + error.message)
+			toast.error(`Failed to add item: ${error.message}`)
 		}
 	}
 

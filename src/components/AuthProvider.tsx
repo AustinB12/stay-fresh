@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			})
 
 			return () => subscription.unsubscribe()
-		} catch (e) {
+		} catch {
 			console.warn(
 				'Supabase auth is not available. Please configure environment variables.',
 			)

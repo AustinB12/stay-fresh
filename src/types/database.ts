@@ -1,63 +1,63 @@
 export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
+	| string
+	| number
+	| boolean
+	| null
+	| { [key: string]: Json | undefined }
+	| Json[]
 
 export interface Database {
-  public: {
-    Tables: {
-      items: {
-        Row: {
-          id: string;
-          user_id: string;
-          name: string;
-          category: 'fridge' | 'pantry' | 'freezer';
-          quantity: number;
-          unit: string;
-          expiry_date: string | null;
-          image_url: string | null;
-          created_at: string;
-          updated_at: string;
-          tags: string[] | null;
-          tracking_type: 'quantity' | 'percentage';
-          percentage_remaining: number | null;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          name: string;
-          category: 'fridge' | 'pantry' | 'freezer';
-          quantity?: number;
-          unit?: string;
-          expiry_date?: string | null;
-          image_url?: string | null;
-          created_at?: string;
-          updated_at?: string;
-          tags?: string[] | null;
-          tracking_type?: 'quantity' | 'percentage';
-          percentage_remaining?: number | null;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          name?: string;
-          category?: 'fridge' | 'pantry' | 'freezer';
-          quantity?: number;
-          unit?: string;
-          expiry_date?: string | null;
-          image_url?: string | null;
-          created_at?: string;
-          updated_at?: string;
-          tags?: string[] | null;
-          tracking_type?: 'quantity' | 'percentage';
-          percentage_remaining?: number | null;
-        };
-      };
-    };
-  };
+	public: {
+		Tables: {
+			items: {
+				Row: {
+					id: string
+					user_id: string
+					name: string
+					category: 'fridge' | 'pantry' | 'freezer'
+					quantity: number
+					unit: string
+					expiry_date: string | null
+					image_url: string | null
+					created_at: string
+					updated_at: string
+					tags: string[] | null
+					tracking_type: 'quantity' | 'percentage'
+					percentage_remaining: number | null
+				}
+				Insert: {
+					id?: string
+					user_id: string
+					name: string
+					category: 'fridge' | 'pantry' | 'freezer'
+					quantity?: number
+					unit?: string
+					expiry_date?: string | null
+					image_url?: string | null
+					created_at?: string
+					updated_at?: string
+					tags?: string[] | null
+					tracking_type?: 'quantity' | 'percentage'
+					percentage_remaining?: number | null
+				}
+				Update: {
+					id?: string
+					user_id?: string
+					name?: string
+					category?: 'fridge' | 'pantry' | 'freezer'
+					quantity?: number
+					unit?: string
+					expiry_date?: string | null
+					image_url?: string | null
+					created_at?: string
+					updated_at?: string
+					tags?: string[] | null
+					tracking_type?: 'quantity' | 'percentage'
+					percentage_remaining?: number | null
+				}
+			}
+		}
+	}
 }
 
-export type Item = Database['public']['Tables']['items']['Row'];
+export type Item = Database['public']['Tables']['items']['Row']
