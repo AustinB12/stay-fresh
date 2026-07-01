@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../types/database'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -12,16 +12,19 @@ if (!isConfigured) {
 	)
 }
 
-export const supabase = isConfigured
+export const supabase: SupabaseClient<Database> = isConfigured
 	? createClient<Database>(supabaseUrl, supabaseAnonKey)
-	: new Proxy({} as any, {
-			get(_, prop) {
-				throw new Error(
-					`Supabase is not configured. Field "${String(prop)}" cannot be accessed. ` +
-						`Please provide VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.`,
-				)
+	: (new Proxy(
+			{},
+			{
+				get(_, prop) {
+					throw new Error(
+						`Supabase is not configured. Field "${String(prop)}" cannot be accessed. ` +
+							`Please provide VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.`,
+					)
+				},
 			},
-		})
+		) as SupabaseClient<Database>)
 
 /** Fetch all tag → color mappings for the current user. */
 export async function fetchTagColors(

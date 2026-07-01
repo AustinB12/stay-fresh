@@ -1,11 +1,14 @@
 import {
 	AlertCircle,
+	ArrowDownUp,
 	Container,
+	ListFilter,
 	type LucideProps,
 	Plus,
 	Refrigerator,
 	Search,
 	ShoppingBasket,
+	ShoppingCart,
 	Snowflake,
 } from 'lucide-react'
 import { AnimatePresence } from 'motion/react'
@@ -14,16 +17,33 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useHousehold } from '@/contexts/HouseholdProvider'
 import { fetchTagColors, setTagColor, supabase } from '@/lib/supabase'
 import { getTagBadgeClass } from '@/lib/tagColors'
-import { cn } from '@/lib/utils'
+import { cn, getExpiryCategory } from '@/lib/utils'
 import type { Item } from '@/types/database'
 import { useAuth } from './AuthProvider'
 import { AddItemDialog } from './Items/AddItemDialog'
 import { EditItemDialog } from './Items/EditItemDialog'
 import { ItemCard } from './Items/ItemCard'
 import { QuickAddItemDialog } from './Items/QuickAddItemDialog'
+
+type SortOption = 'expiry' | 'name' | 'quantity'
+type ExpiryFilter = 'all' | 'expired' | 'soon' | 'fresh'
+
+/** An item needs restocking when it's out of stock or nearly empty. */
+const needsRestock = (item: Item): boolean =>
+	item.tracking_type === 'percentage'
+		? (item.percentage_remaining ?? 100) <= 20
+		: item.quantity <= 0
 
 const InventoryGrid = memo(
 	({
@@ -92,10 +112,13 @@ const InventoryGrid = memo(
 
 export default function Inventory() {
 	const { user } = useAuth()
+	const { activeHousehold } = useHousehold()
 	const [items, setItems] = useState<Item[]>([])
 	const [loading, setLoading] = useState(true)
 	const [searchTerm, setSearchTerm] = useState('')
 	const [activeTags, setActiveTags] = useState<string[]>([])
+	const [sortBy, setSortBy] = useState<SortOption>('expiry')
+	const [expiryFilter, setExpiryFilter] = useState<ExpiryFilter>('all')
 	const [tagColors, setTagColors] = useState<Record<string, string>>({})
 	const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
 	const [isQuickAddDialogOpen, setIsQuickAddDialogOpen] = useState(false)
@@ -112,6 +135,7 @@ export default function Inventory() {
 				supabase
 					.from('items')
 					.select('*')
+					.eq('household_id', activeHousehold?.id ?? '')
 					.order('expiry_date', { ascending: true, nullsFirst: false }),
 				fetchTagColors(user?.id ?? ''),
 			])
@@ -123,13 +147,54 @@ export default function Inventory() {
 		} finally {
 			setLoading(false)
 		}
-	}, [user])
+	}, [user, activeHousehold])
 
 	useEffect(() => {
-		if (user) {
+		if (user && activeHousehold) {
 			fetchItems()
 		}
-	}, [user, fetchItems])
+	}, [user, activeHousehold, fetchItems])
+
+	// Subscribe to realtime changes for the active household so that edits made
+	// by other members (or in another tab) appear without a manual refresh.
+	useEffect(() => {
+		if (!activeHousehold) return
+
+		const channel = supabase
+			.channel(`items:${activeHousehold.id}`)
+			.on(
+				'postgres_changes',
+				{
+					event: '*',
+					schema: 'public',
+					table: 'items',
+					filter: `household_id=eq.${activeHousehold.id}`,
+				},
+				(payload) => {
+					setItems((prev) => {
+						if (payload.eventType === 'INSERT') {
+							const row = payload.new as Item
+							if (prev.some((i) => i.id === row.id)) return prev
+							return [...prev, row]
+						}
+						if (payload.eventType === 'UPDATE') {
+							const row = payload.new as Item
+							return prev.map((i) => (i.id === row.id ? row : i))
+						}
+						if (payload.eventType === 'DELETE') {
+							const oldRow = payload.old as Partial<Item>
+							return prev.filter((i) => i.id !== oldRow.id)
+						}
+						return prev
+					})
+				},
+			)
+			.subscribe()
+
+		return () => {
+			supabase.removeChannel(channel)
+		}
+	}, [activeHousehold])
 
 	const removeItem = useCallback(
 		async (id: string, name: string) => {
@@ -176,7 +241,7 @@ export default function Inventory() {
 				image_url = publicUrl
 			}
 			console.log('image_url: ', image_url)
-			const { error } = await (supabase as any)
+			const { error } = await supabase
 				.from('items')
 				.update({
 					name,
@@ -237,7 +302,7 @@ export default function Inventory() {
 			})
 
 			try {
-				const { error } = await (supabase as any)
+				const { error } = await supabase
 					.from('items')
 					.update({ quantity: newQuantity })
 					.match({ id })
@@ -268,7 +333,7 @@ export default function Inventory() {
 			})
 
 			try {
-				const { error } = await (supabase as any)
+				const { error } = await supabase
 					.from('items')
 					.update({ percentage_remaining: newPercentage })
 					.match({ id })
@@ -303,15 +368,27 @@ export default function Inventory() {
 					activeTags.some((tag) => (item.tags ?? []).includes(tag)),
 				)
 
-	const fridgeItems = tagFilteredItems.filter(
-		(item) => item.category === 'fridge',
-	)
-	const pantryItems = tagFilteredItems.filter(
-		(item) => item.category === 'pantry',
-	)
-	const freezerItems = tagFilteredItems.filter(
-		(item) => item.category === 'freezer',
-	)
+	const expiryFilteredItems =
+		expiryFilter === 'all'
+			? tagFilteredItems
+			: tagFilteredItems.filter(
+					(item) => getExpiryCategory(item.expiry_date) === expiryFilter,
+				)
+
+	const sortedItems = [...expiryFilteredItems].sort((a, b) => {
+		if (sortBy === 'name') return a.name.localeCompare(b.name)
+		if (sortBy === 'quantity') return a.quantity - b.quantity
+		// expiry: items without a date sort last, soonest first
+		if (!a.expiry_date && !b.expiry_date) return 0
+		if (!a.expiry_date) return 1
+		if (!b.expiry_date) return -1
+		return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
+	})
+
+	const fridgeItems = sortedItems.filter((item) => item.category === 'fridge')
+	const pantryItems = sortedItems.filter((item) => item.category === 'pantry')
+	const freezerItems = sortedItems.filter((item) => item.category === 'freezer')
+	const restockItems = sortedItems.filter(needsRestock)
 
 	const EmptyState = () => (
 		<div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
@@ -348,10 +425,43 @@ export default function Inventory() {
 							onChange={(e) => setSearchTerm(e.target.value)}
 						/>
 					</div>
+					<Select value={sortBy} onValueChange={(val: any) => setSortBy(val)}>
+						<SelectTrigger
+							className="h-10 rounded-xl bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+							aria-label="Sort items"
+						>
+							<ArrowDownUp className="h-4 w-4 text-zinc-400" />
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="expiry">Expiry date</SelectItem>
+							<SelectItem value="name">Name</SelectItem>
+							<SelectItem value="quantity">Quantity</SelectItem>
+						</SelectContent>
+					</Select>
+					<Select
+						value={expiryFilter}
+						onValueChange={(val: any) => setExpiryFilter(val)}
+					>
+						<SelectTrigger
+							className="h-10 rounded-xl bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+							aria-label="Filter by expiry"
+						>
+							<ListFilter className="h-4 w-4 text-zinc-400" />
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All items</SelectItem>
+							<SelectItem value="expired">Expired</SelectItem>
+							<SelectItem value="soon">Expiring soon</SelectItem>
+							<SelectItem value="fresh">Fresh</SelectItem>
+						</SelectContent>
+					</Select>
 					<AddItemDialog
 						isOpen={isAddDialogOpen}
 						onOpenChange={setIsAddDialogOpen}
 						userId={user?.id}
+						householdId={activeHousehold?.id}
 						onSuccess={fetchItems}
 						userTags={allTags}
 						tagColors={tagColors}
@@ -361,6 +471,7 @@ export default function Inventory() {
 						isOpen={isQuickAddDialogOpen}
 						onOpenChange={setIsQuickAddDialogOpen}
 						userId={user?.id}
+						householdId={activeHousehold?.id}
 						onSuccess={fetchItems}
 					/>
 					<EditItemDialog
@@ -453,6 +564,21 @@ export default function Inventory() {
 							>
 								Freezer
 							</TabsTrigger>
+							<TabsTrigger
+								value="restock"
+								className="rounded-xl px-3 gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm"
+							>
+								<ShoppingCart className="h-4 w-4" />
+								Restock
+								{restockItems.length > 0 && (
+									<Badge
+										variant="secondary"
+										className="bg-green-600 text-white border-none px-1.5 h-5 min-w-5 justify-center"
+									>
+										{restockItems.length}
+									</Badge>
+								)}
+							</TabsTrigger>
 						</TabsList>
 
 						<TabsContent value="all" className="space-y-6">
@@ -533,6 +659,27 @@ export default function Inventory() {
 								onUpdateQuantity={updateQuantity}
 								onUpdatePercentage={updatePercentage}
 							/>
+						</TabsContent>
+
+						<TabsContent value="restock">
+							{restockItems.length === 0 ? (
+								<div className="bg-zinc-50 dark:bg-zinc-800/50 border border-dashed border-zinc-200 dark:border-zinc-700 rounded-2xl py-12 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500">
+									<ShoppingCart className="h-8 w-8 mb-2 opacity-50" />
+									<p>Nothing to restock — you're all stocked up!</p>
+								</div>
+							) : (
+								<InventoryGrid
+									isSearching={searchTerm !== ''}
+									items={restockItems}
+									icon={ShoppingCart}
+									title="Shopping List"
+									tagColors={tagColors}
+									onEdit={openEditDialog}
+									onRemove={removeItem}
+									onUpdateQuantity={updateQuantity}
+									onUpdatePercentage={updatePercentage}
+								/>
+							)}
 						</TabsContent>
 					</Tabs>
 				</div>

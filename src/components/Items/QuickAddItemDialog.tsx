@@ -12,6 +12,7 @@ import {
 	DialogTrigger,
 } from '@/components/ui/dialog'
 import { supabase } from '@/lib/supabase'
+import type { Database } from '@/types/database'
 
 const quick_add_items: Inventory_Item[] = [
 	{
@@ -48,6 +49,7 @@ interface QuickAddItemDialogProps {
 	isOpen: boolean
 	onOpenChange: (open: boolean) => void
 	userId: string | undefined
+	householdId: string | undefined
 	onSuccess: () => void
 }
 
@@ -69,6 +71,7 @@ export function QuickAddItemDialog({
 	isOpen,
 	onOpenChange,
 	userId,
+	householdId,
 	onSuccess,
 }: QuickAddItemDialogProps) {
 	const [imageFile, setImageFile] = useState<File | null>(null)
@@ -91,6 +94,11 @@ export function QuickAddItemDialog({
 	}
 
 	const addItem = async () => {
+		if (!userId || !householdId) {
+			toast.error('No active household selected.')
+			return
+		}
+
 		let newItem: Inventory_Item = {
 			name: 'New Item',
 			category: 'pantry',
@@ -116,12 +124,16 @@ export function QuickAddItemDialog({
 
 		try {
 			// If we have a URL preview (from barcode scan) but no file, include it in the insert
-			const insertData: Record<string, any> = { ...newItem, user_id: userId }
+			const insertData: Database['public']['Tables']['items']['Insert'] = {
+				...newItem,
+				user_id: userId,
+				household_id: householdId,
+			}
 			if (!imageFile && imagePreview && imagePreview.startsWith('http')) {
 				insertData.image_url = imagePreview
 			}
 
-			const { data: inserted, error } = await (supabase as any)
+			const { data: inserted, error } = await supabase
 				.from('items')
 				.insert([insertData])
 				.select('id')
@@ -138,7 +150,7 @@ export function QuickAddItemDialog({
 					const {
 						data: { publicUrl },
 					} = supabase.storage.from('images').getPublicUrl(filePath)
-					await (supabase as any)
+					await supabase
 						.from('items')
 						.update({ image_url: publicUrl })
 						.match({ id: inserted.id })

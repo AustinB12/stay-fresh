@@ -16,3 +16,14 @@ export const getExpiryStatus = (date: string | null) => {
 		return { label: 'Expiring Soon', color: 'bg-yellow-500' }
 	return null
 }
+
+export type ExpiryCategory = 'expired' | 'soon' | 'fresh'
+
+/** Bucket an item's expiry date into a coarse category for filtering. */
+export const getExpiryCategory = (date: string | null): ExpiryCategory => {
+	if (!date) return 'fresh'
+	const expiry = new Date(date)
+	if (isPast(expiry) || isToday(expiry)) return 'expired'
+	if (expiry < addDays(new Date(), 3)) return 'soon'
+	return 'fresh'
+}

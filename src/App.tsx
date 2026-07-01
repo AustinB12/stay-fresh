@@ -1,9 +1,7 @@
-import { LogOut, User as UserIcon, UserPen } from 'lucide-react'
-import { useState } from 'react'
+import { Home, LogOut, User as UserIcon, UserPen } from 'lucide-react'
+import { lazy, Suspense, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
-import Inventory from '@/components/Inventory'
 import Login from '@/components/Login'
-import UserProfile from '@/components/UserProfile'
 import { Button } from '@/components/ui/button'
 import {
 	DropdownMenu,
@@ -14,10 +12,29 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useHousehold } from '@/contexts/HouseholdProvider'
+
+// Route-level views are lazy-loaded so each is split into its own chunk and
+// only downloaded when the user navigates to it.
+const Inventory = lazy(() => import('@/components/Inventory'))
+const UserProfile = lazy(() => import('@/components/UserProfile'))
+const HouseholdManager = lazy(() => import('@/components/HouseholdManager'))
+const HouseholdOnboarding = lazy(
+	() => import('@/components/HouseholdOnboarding'),
+)
+
+const ViewFallback = () => (
+	<div className="flex items-center justify-center py-20">
+		<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
+	</div>
+)
 
 export default function App() {
 	const { user, loading, signOut } = useAuth()
-	const [view, setView] = useState<'inventory' | 'profile'>('inventory')
+	const { activeHousehold, loading: householdLoading } = useHousehold()
+	const [view, setView] = useState<'inventory' | 'profile' | 'households'>(
+		'inventory',
+	)
 
 	if (loading) {
 		return (
@@ -55,8 +72,24 @@ export default function App() {
 		return <Login />
 	}
 
+	if (householdLoading) {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
+			</div>
+		)
+	}
+
+	if (!activeHousehold) {
+		return (
+			<Suspense fallback={<ViewFallback />}>
+				<HouseholdOnboarding />
+			</Suspense>
+		)
+	}
+
 	return (
-		<div className="min-h-screen flex flex-col bg-white dark:bg-zinc-950">
+		<div className="min-h-screen flex flex-col bg-white dark:bg-linear-165 from-zinc-800 to-zinc-950">
 			<nav className="border-b border-zinc-100 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-50">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex justify-between h-16 items-center">
@@ -152,6 +185,13 @@ export default function App() {
 									<span>Profile</span>
 								</DropdownMenuItem>
 								<DropdownMenuItem
+									onClick={() => setView('households')}
+									className="rounded-lg m-1 cursor-pointer"
+								>
+									<Home className="mr-2 h-4 w-4" />
+									<span>Households</span>
+								</DropdownMenuItem>
+								<DropdownMenuItem
 									onClick={signOut}
 									className="text-destructive focus:text-destructive focus:bg-destructive/10 rounded-lg m-1 cursor-pointer"
 								>
@@ -165,7 +205,15 @@ export default function App() {
 			</nav>
 
 			<main className="flex-1">
-				{view === 'profile' ? <UserProfile /> : <Inventory />}
+				<Suspense fallback={<ViewFallback />}>
+					{view === 'profile' ? (
+						<UserProfile />
+					) : view === 'households' ? (
+						<HouseholdManager />
+					) : (
+						<Inventory />
+					)}
+				</Suspense>
 			</main>
 
 			<footer className="border-t border-zinc-100 dark:border-zinc-800 py-4 px-4">

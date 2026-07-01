@@ -70,7 +70,8 @@ export const ItemCard = memo(
 			>
 				<Card
 					onDoubleClick={() => onEdit(item)}
-					className="hover:cursor-pointer overflow-hidden border-zinc-200 dark:border-zinc-700 transition-all hover:shadow-md h-full flex flex-col gap-0 py-4 px-4"
+					title="Double-click to edit"
+					className="hover:cursor-pointer overflow-hidden bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl border border-white/30 dark:border-white/10 ring-0 shadow-lg shadow-black/5 transition-all hover:shadow-xl hover:bg-white/55 dark:hover:bg-zinc-900/55 h-full flex flex-col gap-0 py-4"
 				>
 					<CardHeader className="pb-2 space-y-1 relative">
 						<div className="flex justify-between items-start">
@@ -121,8 +122,8 @@ export const ItemCard = memo(
 							</div>
 						)}
 					</CardDescription>
-					<div className="px-4 py-2 flex justify-center">
-						<div className="w-full h-72 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+					<div className="px-0 py-2 flex justify-center">
+						<div className="relative w-full h-72 overflow-hidden bg-white/30 dark:bg-zinc-800/30 flex items-center justify-center">
 							{!imgError ? (
 								item.image_url ? (
 									<img
@@ -136,6 +137,20 @@ export const ItemCard = memo(
 								)
 							) : (
 								<ShoppingBasket className="h-10 w-10 text-zinc-300 dark:text-zinc-600" />
+							)}
+							{item.tracking_type === 'percentage' && (
+								<div className="absolute bottom-0 left-0 right-0 h-3 bg-black/10 dark:bg-white/10">
+									<div
+										className={`h-full transition-all ${
+											(item.percentage_remaining ?? 100) >= 50
+												? 'bg-green-500'
+												: (item.percentage_remaining ?? 100) >= 25
+													? 'bg-yellow-500'
+													: 'bg-red-500'
+										}`}
+										style={{ width: `${item.percentage_remaining ?? 100}%` }}
+									/>
+								</div>
 							)}
 						</div>
 					</div>
@@ -172,23 +187,9 @@ export const ItemCard = memo(
 								>
 									<Minus className="h-5 w-5" />
 								</Button>
-								<div className="flex-1 space-y-1">
-									<div className="w-full h-2 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
-										<div
-											className={`h-full rounded-full transition-all ${
-												(item.percentage_remaining ?? 100) >= 50
-													? 'bg-green-500'
-													: (item.percentage_remaining ?? 100) >= 25
-														? 'bg-yellow-500'
-														: 'bg-red-500'
-											}`}
-											style={{ width: `${item.percentage_remaining ?? 100}%` }}
-										/>
-									</div>
-									<p className="text-xs text-center text-zinc-500 dark:text-zinc-400">
-										{item.percentage_remaining ?? 100}% remaining
-									</p>
-								</div>
+								<span className="flex-1 text-sm font-medium text-center text-zinc-500 dark:text-zinc-400">
+									{item.percentage_remaining ?? 100}%
+								</span>
 								<Button
 									variant="outline"
 									size="icon"

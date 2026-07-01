@@ -1,5 +1,5 @@
 import { Camera, ImagePlus, Plus, ScanBarcode } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { lazy, Suspense, useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { CardDescription } from '@/components/ui/card'
@@ -22,13 +22,20 @@ import {
 } from '@/components/ui/select'
 import { lookupBarcode } from '@/lib/openFoodFacts'
 import { supabase } from '@/lib/supabase'
-import { BarcodeScanner } from './BarcodeScanner'
+import type { Database } from '@/types/database'
 import { TagInput } from './TagInput'
+
+// Lazy-loaded so the heavy barcode-scanning library (@zxing) is only
+// downloaded when the user actually opens the scanner.
+const BarcodeScanner = lazy(() =>
+	import('./BarcodeScanner').then((m) => ({ default: m.BarcodeScanner })),
+)
 
 interface AddItemDialogProps {
 	isOpen: boolean
 	onOpenChange: (open: boolean) => void
 	userId: string | undefined
+	householdId: string | undefined
 	onSuccess: () => void
 	userTags?: string[]
 	tagColors?: Record<string, string>
@@ -39,6 +46,7 @@ export function AddItemDialog({
 	isOpen,
 	onOpenChange,
 	userId,
+	householdId,
 	onSuccess,
 	userTags = [],
 	tagColors = {},
@@ -103,15 +111,23 @@ export function AddItemDialog({
 
 	const addItem = async () => {
 		if (!newItem.name) return
+		if (!userId || !householdId) {
+			toast.error('No active household selected.')
+			return
+		}
 
 		try {
 			// If we have a URL preview (from barcode scan) but no file, include it in the insert
-			const insertData: Record<string, any> = { ...newItem, user_id: userId }
+			const insertData: Database['public']['Tables']['items']['Insert'] = {
+				...newItem,
+				user_id: userId,
+				household_id: householdId,
+			}
 			if (!imageFile && imagePreview && imagePreview.startsWith('http')) {
 				insertData.image_url = imagePreview
 			}
 
-			const { data: inserted, error } = await (supabase as any)
+			const { data: inserted, error } = await supabase
 				.from('items')
 				.insert([insertData])
 				.select('id')
@@ -128,7 +144,7 @@ export function AddItemDialog({
 					const {
 						data: { publicUrl },
 					} = supabase.storage.from('images').getPublicUrl(filePath)
-					await (supabase as any)
+					await supabase
 						.from('items')
 						.update({ image_url: publicUrl })
 						.match({ id: inserted.id })
@@ -393,11 +409,15 @@ export function AddItemDialog({
 					</Button>
 				</DialogFooter>
 			</DialogContent>
-			<BarcodeScanner
-				isOpen={isScannerOpen}
-				onClose={() => setIsScannerOpen(false)}
-				onDetected={handleBarcodeDetected}
-			/>
+			{isScannerOpen && (
+				<Suspense fallback={null}>
+					<BarcodeScanner
+						isOpen={isScannerOpen}
+						onClose={() => setIsScannerOpen(false)}
+						onDetected={handleBarcodeDetected}
+					/>
+				</Suspense>
+			)}
 		</Dialog>
 	)
 }
